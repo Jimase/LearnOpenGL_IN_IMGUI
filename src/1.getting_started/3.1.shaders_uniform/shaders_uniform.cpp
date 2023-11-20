@@ -4,6 +4,9 @@
 #include <iostream>
 #include <cmath>
 
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 
@@ -128,6 +131,12 @@ int main()
     // just bind it beforehand before rendering the respective triangle; this is another approach.
     glBindVertexArray(VAO);
 
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
 
     // render loop
     // -----------
@@ -154,6 +163,17 @@ int main()
         // render the triangle
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
+        // ImGui 帧开始
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        // 创建 ImGui 时间显示器
+        ImGui::Begin("TimeEditor");
+        ImGui::Text("Time is %f", timeValue);
+        ImGui::End();
+        // 渲染 ImGui
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);

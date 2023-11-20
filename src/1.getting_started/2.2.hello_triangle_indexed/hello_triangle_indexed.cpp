@@ -3,6 +3,9 @@
 
 #include <iostream>
 
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 
@@ -18,9 +21,11 @@ const char *vertexShaderSource = "#version 330 core\n"
     "}\0";
 const char *fragmentShaderSource = "#version 330 core\n"
     "out vec4 FragColor;\n"
+    "uniform vec4 ourColor;\n"// 添加统一变量以获取颜色
     "void main()\n"
     "{\n"
-    "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+    //"   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+    "   FragColor = ourColor;\n"
     "}\n\0";
 
 int main()
@@ -139,6 +144,19 @@ int main()
     // uncomment this call to draw in wireframe polygons.
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
+
+    // 定义两个三角形的颜色
+    ImVec4 triangleColor1 = ImVec4(1.0f, 0.5f, 0.2f, 1.0f); // 初始颜色
+    ImVec4 triangleColor2 = ImVec4(0.2f, 0.5f, 1.0f, 1.0f); // 另一个三角形的颜色
+
+    // 获取 ourColor 统一变量的位置
+    int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
@@ -154,11 +172,33 @@ int main()
 
         // draw our first triangle
         glUseProgram(shaderProgram);
-        glBindVertexArray(VAO); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
+        glBindVertexArray(VAO); // 绑定 VAO 一次，用于两个三角形
+
+        // 设置第一个三角形的颜色并绘制
+        glUniform4f(vertexColorLocation, triangleColor1.x, triangleColor1.y, triangleColor1.z, triangleColor1.w);
+        //glBindVertexArray(VAO); //无需二次绑定
+        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0); // 只绘制前3个索引（第一个三角形）
+
+        // 设置第二个三角形的颜色并绘制
+        glUniform4f(vertexColorLocation, triangleColor2.x, triangleColor2.y, triangleColor2.z, triangleColor2.w);
+        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(3 * sizeof(unsigned int))); // 从第4个索引开始绘制（第二个三角形）
+        //glBindVertexArray(VAO); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
         //glDrawArrays(GL_TRIANGLES, 0, 6);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         // glBindVertexArray(0); // no need to unbind it every time 
- 
+        // ImGui 帧开始
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        // 创建 ImGui 颜色编辑器
+        ImGui::Begin("Triangle Color Editor");
+        ImGui::ColorEdit4("Triangle 1 Color", (float*)&triangleColor1);
+        ImGui::ColorEdit4("Triangle 2 Color", (float*)&triangleColor2);
+        ImGui::End();
+        // 渲染 ImGui
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);

@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 3.0)
 cmake_policy(VERSION 3.0)
 
-project(LearnOpenGL)
+project(LearnOpenGL_In_ImGui)
 
 set(CMAKE_CXX_STANDARD 17) # this does nothing for MSVC, use target_compile_options below
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -197,6 +197,14 @@ set(LIBS ${LIBS} STB_IMAGE)
 
 add_library(GLAD "src/glad.c")
 set(LIBS ${LIBS} GLAD)
+
+set(IMGUI_DIR "${CMAKE_SOURCE_DIR}/includes/imgui")
+file(GLOB IMGUI_SOURCES ${IMGUI_DIR}/*.cpp ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp)
+add_library(ImGui ${IMGUI_SOURCES})
+target_include_directories(ImGui PUBLIC ${IMGUI_DIR})
+
+set(LIBS ${LIBS} ImGui glfw3 opengl32 assimp freetype irrKlang STB_IMAGE GLAD)
+
 
 macro(makeLink src dest target)
   add_custom_command(TARGET ${target} POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink ${src} ${dest}  DEPENDS  ${dest} COMMENT "mklink ${src} -> ${dest}")

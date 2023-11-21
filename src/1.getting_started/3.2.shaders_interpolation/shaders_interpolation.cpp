@@ -3,6 +3,10 @@
 
 #include <iostream>
 
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 
@@ -134,6 +138,13 @@ int main()
     // as we only have a single shader, we could also just activate our shader once beforehand if we want to 
     glUseProgram(shaderProgram);
 
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
+
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
@@ -151,12 +162,49 @@ int main()
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
+        {
+            //  开始ImGui帧
+            //  需要确保在每次渲染循环中，当ImGui组件的值改变时，顶点缓冲区（VBO）也相应地更新
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
+
+            // ImGui窗口来控制顶点
+            ImGui::Begin("Vertex Control");
+            bool updated = false;
+            updated |= ImGui::DragFloat3("Bottom Right Pos", &vertices[0], 0.1f);
+            updated |= ImGui::ColorEdit3("Bottom Right Color", &vertices[3]);
+            updated |= ImGui::DragFloat3("Bottom Left Pos", &vertices[6], 0.1f);
+            updated |= ImGui::ColorEdit3("Bottom Left Color", &vertices[9]);
+            updated |= ImGui::DragFloat3("Top Pos", &vertices[12], 0.1f);
+            updated |= ImGui::ColorEdit3("Top Color", &vertices[15]);
+            ImGui::End();
+
+            // 如果顶点数据有更新，重新上传到GPU
+            if (updated) {
+                glBindBuffer(GL_ARRAY_BUFFER, VBO);
+                glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+            }
+
+            // 渲染三角形
+            glBindVertexArray(VAO);
+            glUseProgram(shaderProgram);
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+            // Rendering ImGui
+            ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        }
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
+    // Cleanup ImGui
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+    
     // optional: de-allocate all resources once they've outlived their purpose:
     // ------------------------------------------------------------------------
     glDeleteVertexArrays(1, &VAO);

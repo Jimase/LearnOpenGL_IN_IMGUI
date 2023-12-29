@@ -7,6 +7,9 @@
 
 #include <iostream>
 
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 
@@ -93,7 +96,7 @@ int main()
     unsigned int texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture); // all upcoming GL_TEXTURE_2D operations now have effect on this texture object
-    // set the texture wrapping parameters
+    // set the texture wrapping parameters 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     // set texture filtering parameters
@@ -115,6 +118,17 @@ int main()
     stbi_image_free(data);
 
 
+    bool wireframeMode = false;
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
@@ -135,6 +149,64 @@ int main()
         ourShader.use();
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+        //  需要确保在每次渲染循环中，当ImGui组件的值改变时，顶点缓冲区（VBO）也相应地更新
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        // ImGui窗口来控制顶点
+        ImGui::Begin("Vertex Control");
+        bool updated = false;
+        updated |= ImGui::DragFloat3("Top Right Pos", &vertices[0], 0.1f);
+        updated |= ImGui::ColorEdit3("Top Right Color", &vertices[3]);
+        updated |= ImGui::DragFloat2("Top Right TexCoord", &vertices[6], 0.1f);
+
+        updated |= ImGui::DragFloat3("Bottom Right Pos", &vertices[8], 0.1f);
+        updated |= ImGui::ColorEdit3("Bottom Right Color", &vertices[11]);
+        updated |= ImGui::DragFloat2("Bottom Right TexCoord", &vertices[14], 0.1f);
+
+        updated |= ImGui::DragFloat3("Bottom Left Pos", &vertices[16], 0.1f);
+        updated |= ImGui::ColorEdit3("Bottom Left Color", &vertices[19]);
+        updated |= ImGui::DragFloat2("Bottom Left TexCoord", &vertices[22], 0.1f);
+
+        updated |= ImGui::DragFloat3("Top Left Pos", &vertices[24], 0.1f);
+        updated |= ImGui::ColorEdit3("Top Left Color", &vertices[27]);
+        updated |= ImGui::DragFloat2("Top Left TexCoord", &vertices[30], 0.1f);
+     
+        // 添加线框模式开关
+        ImGui::Checkbox("Wireframe Mode", &wireframeMode);
+
+        ImGui::End();
+        // 如果顶点数据有更新，重新上传到GPU
+        if (updated) {
+            glBindBuffer(GL_ARRAY_BUFFER, VBO);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+        }
+        // 设置线框模式或填充模式
+        if (wireframeMode) {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        }
+        else {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        }
+        // 渲染三角形
+        glBindVertexArray(VAO);
+        ourShader.use();
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        // 渲染 ImGui
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        // Update and Render additional Platform Windows
+        // (Platform functions may change the current OpenGL context, so we save/restore it to make it easier to paste this code elsewhere.
+        //  For this specific demo app we could also call glfwMakeContextCurrent(window) directly)
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            GLFWwindow* backup_current_context = glfwGetCurrentContext();
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+            glfwMakeContextCurrent(backup_current_context);
+        }
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------

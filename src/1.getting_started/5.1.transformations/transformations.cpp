@@ -11,6 +11,10 @@
 
 #include <iostream>
 
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 
@@ -53,7 +57,7 @@ int main()
 
     // build and compile our shader zprogram
     // ------------------------------------
-    Shader ourShader("5.1.transform.vs", "5.1.transform.fs");
+    Shader ourShader("5.1.transform.vert", "5.1.transform.frag");
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -142,10 +146,25 @@ int main()
 
     // tell opengl for each sampler to which texture unit it belongs to (only has to be done once)
     // -------------------------------------------------------------------------------------------
-    ourShader.use(); 
+    ourShader.use(); //activate/use the shader before setting uniforms!
     ourShader.setInt("texture1", 0);
     ourShader.setInt("texture2", 1);
 
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
+
+    glm::vec3 position = glm::vec3(0.5f, -0.5f, 0.0f);  // 初始位置
+    bool autoRotate = true;                             // 默认启用自动旋转
+    float rotationAngle = 0.0f;                         // 初始旋转角度
+    float lastAutoRotationAngle = 0.0f;                 // 最后一次自动旋转的角度
 
     // render loop
     // -----------
@@ -167,9 +186,18 @@ int main()
         glBindTexture(GL_TEXTURE_2D, texture2);
 
         // create transformations
-        glm::mat4 transform = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
-        transform = glm::translate(transform, glm::vec3(0.5f, -0.5f, 0.0f));
-        transform = glm::rotate(transform, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
+        glm::mat4 transform = glm::mat4(1.0f); // 初始化为单位矩阵
+        transform = glm::translate(transform, position); // 应用位置变换
+
+        if (autoRotate) {
+            float timeElapsed = (float)glfwGetTime()*10.0f;                         // 获取自动旋转的时间
+            float additionalRotation = timeElapsed - lastAutoRotationAngle;         // 自上次更新以来的额外旋转
+            rotationAngle += additionalRotation;                                    // 累加旋转角度
+            lastAutoRotationAngle = timeElapsed;                                    // 更新最后一次自动旋转的时间
+        }
+
+        transform = glm::rotate(transform, glm::radians(rotationAngle), glm::vec3(0.0f, 0.0f, 1.0f)); // 应用总旋转
+
 
         // get matrix's uniform location and set matrix
         ourShader.use();
@@ -179,6 +207,33 @@ int main()
         // render container
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+        // start the ImGui frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        // ImGui window for controlling transformations
+        ImGui::Begin("Control Panel");
+        ImGui::Text("Transformations");
+        ImGui::DragFloat3("Position", glm::value_ptr(position), -1.0f, 1.0f); // 控制位置
+        ImGui::DragFloat("Rotation", &rotationAngle, 1.0f);   
+        ImGui::Checkbox("Auto Rotate", &autoRotate);
+        // 控制旋转
+        ImGui::End();
+        // 渲染 ImGui
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        // Update and Render additional Platform Windows
+        // (Platform functions may change the current OpenGL context, so we save/restore it to make it easier to paste this code elsewhere.
+        //  For this specific demo app we could also call glfwMakeContextCurrent(window) directly)
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            GLFWwindow* backup_current_context = glfwGetCurrentContext();
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+            glfwMakeContextCurrent(backup_current_context);
+        }
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------

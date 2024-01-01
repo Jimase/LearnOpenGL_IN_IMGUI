@@ -7,6 +7,10 @@
 
 #include <iostream>
 
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 
@@ -148,6 +152,17 @@ int main()
     // or set it via the texture class
     ourShader.setInt("texture2", 1);
 
+    GLenum textureFilterMode = GL_NEAREST;
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
 
     // render loop
     // -----------
@@ -173,6 +188,57 @@ int main()
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
+        /*  练习内容：
+        * 1、尝试在矩形上只显示纹理图像的中间一部分，修改纹理坐标，达到能看见单个的像素的效果。
+        * 2、尝试使用GL_NEAREST的纹理过滤方式让像素显示得更清晰
+        * 上述二者尝试ImGui组件控制实现
+        */
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        // ImGui窗口来控制顶点
+        ImGui::Begin("Vertex Control");
+        bool updated = false;
+        updated |= ImGui::DragFloat2("Top Right TexCoord", &vertices[6], 0.1f);
+        updated |= ImGui::DragFloat2("Bottom Right TexCoord", &vertices[14], 0.1f);
+        updated |= ImGui::DragFloat2("Bottom Left TexCoord", &vertices[22], 0.1f);
+        updated |= ImGui::DragFloat2("Top Left TexCoord", &vertices[30], 0.1f);
+
+        // 纹理过滤方式切换工具
+        if (ImGui::Button(textureFilterMode == GL_NEAREST ? "Switch to Linear Filter" : "Switch to Nearest Filter")) {
+            textureFilterMode = (textureFilterMode == GL_NEAREST) ? GL_LINEAR : GL_NEAREST;
+            glBindTexture(GL_TEXTURE_2D, texture1);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, textureFilterMode);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, textureFilterMode);
+            glBindTexture(GL_TEXTURE_2D, texture2);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, textureFilterMode);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, textureFilterMode);
+        }
+
+        ImGui::End();
+        // 如果顶点数据有更新，重新上传到GPU
+        if (updated) {
+            glBindBuffer(GL_ARRAY_BUFFER, VBO);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+        }
+        // 渲染三角形
+        glBindVertexArray(VAO);
+        ourShader.use();
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        // 渲染 ImGui
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        // Update and Render additional Platform Windows
+        // (Platform functions may change the current OpenGL context, so we save/restore it to make it easier to paste this code elsewhere.
+        //  For this specific demo app we could also call glfwMakeContextCurrent(window) directly)
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            GLFWwindow* backup_current_context = glfwGetCurrentContext();
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+            glfwMakeContextCurrent(backup_current_context);
+        }
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);

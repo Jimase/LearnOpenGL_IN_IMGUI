@@ -165,6 +165,7 @@ int main()
     bool autoRotate = true;                             // 默认启用自动旋转
     float rotationAngle = 0.0f;                         // 初始旋转角度
     float lastAutoRotationAngle = 0.0f;                 // 最后一次自动旋转的角度
+    float lastTimeAutoRotatedOff = 0.0f;                // 记录关闭自动旋转时的时间
 
     // render loop
     // -----------
@@ -217,8 +218,21 @@ int main()
         ImGui::Begin("Control Panel");
         ImGui::Text("Transformations");
         ImGui::DragFloat3("Position", glm::value_ptr(position), -1.0f, 1.0f); // 控制位置
-        ImGui::DragFloat("Rotation", &rotationAngle, 1.0f);   
-        ImGui::Checkbox("Auto Rotate", &autoRotate);
+        ImGui::DragFloat("Rotation", &rotationAngle, 1.0f);  
+
+        if (ImGui::Checkbox("Auto Rotate", &autoRotate)) {
+            if (autoRotate) 
+            {
+                // 当重新启用自动旋转时
+                lastAutoRotationAngle += ((float)glfwGetTime() - lastTimeAutoRotatedOff);
+            }
+            else 
+            {
+                // 当关闭自动旋转时
+                lastTimeAutoRotatedOff = (float)glfwGetTime();
+            }
+        }
+
         // 控制旋转
         ImGui::End();
         // 渲染 ImGui

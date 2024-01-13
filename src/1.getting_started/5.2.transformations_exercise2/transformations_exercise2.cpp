@@ -11,6 +11,10 @@
 
 #include <iostream>
 
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 
@@ -142,11 +146,31 @@ int main()
 
     // tell opengl for each sampler to which texture unit it belongs to (only has to be done once)
     // -------------------------------------------------------------------------------------------
-    ourShader.use();
+    ourShader.use(); //activate/use the shader before setting uniforms!
     ourShader.setInt("texture1", 0);
     ourShader.setInt("texture2", 1);
 
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
+    
+    glm::vec3 firstPosition = glm::vec3(0.5f, -0.5f, 0.0f);     // 初始位置
+    bool autoRotate                 = true;                     // 默认启用自动旋转
+    float firstRotationAngle        = 0.0f;                     // 初始旋转角度
+    float lastAutoRotationAngle     = 0.0f;                     // 最后一次自动旋转的角度
+    float lastTimeAutoRotatedOff    = 0.0f;                     // 记录关闭自动旋转时的时间
 
+    bool autoScale              = true;
+    float scaleAmount           = 0.0f;
+    float lastAutoScaleSize     = 0.0f;
+    float lastTimeAutoScaleOff  = 0.0f;
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
@@ -170,8 +194,15 @@ int main()
         glm::mat4 transform = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
         // first container
         // ---------------
-        transform = glm::translate(transform, glm::vec3(0.5f, -0.5f, 0.0f));
-        transform = glm::rotate(transform, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
+        transform = glm::translate(transform, firstPosition);                       // 应用位置变换
+        if (autoRotate) {
+            float timeElapsed = (float)glfwGetTime() * 10.0f;                       // 获取自动旋转的时间
+            float additionalRotation = timeElapsed - lastAutoRotationAngle;         // 自上次更新以来的额外旋转
+            firstRotationAngle += additionalRotation;                               // 累加旋转角度
+            lastAutoRotationAngle = timeElapsed;                                    // 更新最后一次自动旋转的时间
+        }
+        transform = glm::rotate(transform, glm::radians(firstRotationAngle), glm::vec3(0.0f, 0.0f, 1.0f)); // 应用总旋转
+
         // get their uniform location and set matrix (using glm::value_ptr)
         unsigned int transformLoc = glGetUniformLocation(ourShader.ID, "transform");
         glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
@@ -184,9 +215,76 @@ int main()
         // ---------------------
         transform = glm::mat4(1.0f); // reset it to identity matrix
         transform = glm::translate(transform, glm::vec3(-0.5f, 0.5f, 0.0f));
-        float scaleAmount = static_cast<float>(sin(glfwGetTime()));
-        transform = glm::scale(transform, glm::vec3(scaleAmount, scaleAmount, scaleAmount));
+        //float scaleAmount = static_cast<float>(sin(glfwGetTime()));
+        if (autoScale)
+        {
+            float timeElapsed = (float)glfwGetTime()*10.0f;                         // 获取自动缩放的时间
+            float additionScale = timeElapsed - lastAutoRotationAngle;              // 自上次更新以来的额外缩放
+            scaleAmount += additionScale;                                           // 累加缩放尺度
+            lastAutoScaleSize = timeElapsed;                                        // 更新最后一次自动缩放的时间
+        }
+        transform = glm::scale(transform, glm::vec3(sin(scaleAmount), sin(scaleAmount), sin(scaleAmount)));
         glUniformMatrix4fv(transformLoc, 1, GL_FALSE, &transform[0][0]); // this time take the matrix value array's first element as its memory pointer value
+
+        // start the ImGui frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        // ImGui window for controlling transformations
+        ImGui::Begin("First Control Panel");
+        ImGui::Text("Transformations");
+        ImGui::DragFloat3("firstPosition", glm::value_ptr(firstPosition), -1.0f, 1.0f); // 控制位置
+        ImGui::DragFloat("firstRotation", &firstRotationAngle, 0.10f);
+        if (firstRotationAngle > 360.0f) {
+            firstRotationAngle = 0.0f;
+        }
+        if (ImGui::Checkbox("Auto Rotate", &autoRotate)) {
+            if (autoRotate)
+            {
+                // 当重新启用自动缩放时
+                lastAutoScaleSize += ((float)glfwGetTime() - lastTimeAutoScaleOff);
+            }
+            else
+            {
+                // 当关闭自动旋转时
+                lastTimeAutoScaleOff = (float)glfwGetTime();
+            }
+        }
+        // 控制旋转
+        ImGui::End();
+
+        // ImGui window for controlling transformations
+        ImGui::Begin("Second Control Panel");
+        ImGui::Text("Transformations");
+        ImGui::DragFloat("secondScaleAmount", &scaleAmount, 0.10f);
+        // 控制缩放
+        if (ImGui::Checkbox("Auto Scale Amount", &autoScale)) {
+            if (autoScale)
+            {
+                // 当重新启用自动旋转时
+                lastAutoScaleSize += ((float)glfwGetTime() - lastTimeAutoScaleOff);
+            }
+            else
+            {
+                // 当关闭自动旋转时
+                lastTimeAutoScaleOff = (float)glfwGetTime();
+            }
+        }
+        ImGui::End();
+        // 渲染 ImGui
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        // Update and Render additional Platform Windows
+        // (Platform functions may change the current OpenGL context, so we save/restore it to make it easier to paste this code elsewhere.
+        //  For this specific demo app we could also call glfwMakeContextCurrent(window) directly)
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            GLFWwindow* backup_current_context = glfwGetCurrentContext();
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+            glfwMakeContextCurrent(backup_current_context);
+        }
 
         // now with the uniform matrix being replaced with new transformations, draw it again.
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);

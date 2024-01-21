@@ -2,7 +2,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #define IMAPP_IMPL
-#include "ImApp.h"
+#include "vcpkg-example/ImApp.h"
 
 #include "ImGuizmo.h"
 #include "ImSequencer.h"
@@ -189,11 +189,11 @@ void EditTransform(float* cameraView, float* cameraProjection, float* matrix, bo
 
    if (editTransformDecomposition)
    {
-      if (ImGui::IsKeyPressed(90))
+      if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(90)))
          mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
-      if (ImGui::IsKeyPressed(69))
+      if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(69)))
          mCurrentGizmoOperation = ImGuizmo::ROTATE;
-      if (ImGui::IsKeyPressed(82)) // r Key
+      if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(82))) // r Key
          mCurrentGizmoOperation = ImGuizmo::SCALE;
       if (ImGui::RadioButton("Translate", mCurrentGizmoOperation == ImGuizmo::TRANSLATE))
          mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
@@ -218,7 +218,7 @@ void EditTransform(float* cameraView, float* cameraProjection, float* matrix, bo
          if (ImGui::RadioButton("World", mCurrentGizmoMode == ImGuizmo::WORLD))
             mCurrentGizmoMode = ImGuizmo::WORLD;
       }
-      if (ImGui::IsKeyPressed(83))
+      if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(83)))
          useSnap = !useSnap;
       ImGui::Checkbox("", &useSnap);
       ImGui::SameLine();

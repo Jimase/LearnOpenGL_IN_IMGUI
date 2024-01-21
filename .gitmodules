@@ -2,3 +2,9 @@
 	path = includes/imgui
 	url = https://github.com/ocornut/imgui.git
 	branch = master
+[submodule "includes/imgui_test_engine"]
+	path = includes/imgui_test_engine
+	url = https://github.com/Jimase/imgui_test_engine.git
+[submodule "includes/imguizmo"]
+	path = includes/imguizmo
+	url = https://github.com/Jimase/ImGuizmo.git

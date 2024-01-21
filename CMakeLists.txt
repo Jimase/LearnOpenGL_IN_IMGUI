@@ -69,6 +69,7 @@ set(CHAPTERS
     5.advanced_lighting
     6.pbr
     7.in_practice
+    9.learn_imguizmo_demo
 )
 
 set(1.getting_started
@@ -173,6 +174,10 @@ set(7.in_practice
     #3.2d_game
 )
 
+set(9.learn_imguizmo_demo
+    # 配置imguizmo的官方文件
+    1.imguizmo_example
+)
 set(GUEST_ARTICLES
 	8.guest/2020/oit
 	8.guest/2020/skeletal_animation
@@ -202,8 +207,14 @@ set(IMGUI_DIR "${CMAKE_SOURCE_DIR}/includes/imgui")
 file(GLOB IMGUI_SOURCES ${IMGUI_DIR}/*.cpp ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp)
 add_library(ImGui ${IMGUI_SOURCES})
 target_include_directories(ImGui PUBLIC ${IMGUI_DIR})
+#引入imguizmo
+set(IMGUIZMO_DIR "${CMAKE_SOURCE_DIR}/includes/imguizmo")
+file(GLOB IMGUIZMO_SOURCES ${IMGUIZMO_DIR}/*.cpp ${IMGUIZMO_DIR}/*.h)
+add_library(ImGuiZmo ${IMGUIZMO_SOURCES})
+# Add the IMGUI_DIR to the include directories of ImGuiZmo
+target_include_directories(ImGuiZmo PUBLIC ${IMGUIZMO_DIR} ${IMGUI_DIR})
 
-set(LIBS ${LIBS} ImGui glfw3 opengl32 assimp freetype irrKlang STB_IMAGE GLAD)
+set(LIBS ${LIBS} ImGui ImGuiZmo glfw3 opengl32 assimp freetype irrKlang STB_IMAGE GLAD)
 
 
 macro(makeLink src dest target)

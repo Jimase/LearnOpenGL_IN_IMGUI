@@ -220,7 +220,7 @@ void EditTransform(float* cameraView, float* cameraProjection, float* matrix, bo
       }
       if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(83)))
          useSnap = !useSnap;
-      ImGui::Checkbox("", &useSnap);
+      ImGui::Checkbox("nil name", &useSnap);
       ImGui::SameLine();
 
       switch (mCurrentGizmoOperation)
@@ -239,7 +239,7 @@ void EditTransform(float* cameraView, float* cameraProjection, float* matrix, bo
       if (boundSizing)
       {
          ImGui::PushID(3);
-         ImGui::Checkbox("", &boundSizingSnap);
+         ImGui::Checkbox("nil name", &boundSizingSnap);
          ImGui::SameLine();
          ImGui::InputFloat3("Snap", boundsSnap);
          ImGui::PopID();
@@ -774,13 +774,13 @@ int main(int, char**)
       }
       else
       {
-         ImGui::Text(ImGuizmo::IsOver()?"Over gizmo":"");
+         ImGui::Text(ImGuizmo::IsOver()?"Over gizmo":"nil name");
          ImGui::SameLine();
-         ImGui::Text(ImGuizmo::IsOver(ImGuizmo::TRANSLATE) ? "Over translate gizmo" : "");
+         ImGui::Text(ImGuizmo::IsOver(ImGuizmo::TRANSLATE) ? "Over translate gizmo" : "nil name");
          ImGui::SameLine();
-         ImGui::Text(ImGuizmo::IsOver(ImGuizmo::ROTATE) ? "Over rotate gizmo" : "");
+         ImGui::Text(ImGuizmo::IsOver(ImGuizmo::ROTATE) ? "Over rotate gizmo" : "nil name");
          ImGui::SameLine();
-         ImGui::Text(ImGuizmo::IsOver(ImGuizmo::SCALE) ? "Over scale gizmo" : "");
+         ImGui::Text(ImGuizmo::IsOver(ImGuizmo::SCALE) ? "Over scale gizmo" : "nil name");
       }
       ImGui::Separator();
       for (int matId = 0; matId < gizmoCount; matId++)

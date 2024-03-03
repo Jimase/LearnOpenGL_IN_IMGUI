@@ -10,6 +10,7 @@
 #include <learnopengl/shader_m.h>
 
 #include <iostream>
+#include <vector>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
@@ -59,6 +60,22 @@ int main()
     // ------------------------------------
     Shader ourShader("6.3.1.coordinate_systems.vs", "6.3.1.coordinate_systems.fs");
 
+    /* 6.3.1.coordinate_systems.vs
+    #version 330 core
+    layout (location = 0) in vec3 aPos;
+    layout (location = 1) in vec2 aTexCoord;
+    out vec2 TexCoord;
+
+    uniform mat4 model;
+    uniform mat4 view;
+    uniform mat4 projection;
+
+    void main()
+    {
+        gl_Position = projection * view * model * vec4(aPos, 1.0f);
+        TexCoord = vec2(aTexCoord.x, 1.0 - aTexCoord.y);
+    }
+    */
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
     float vertices[] = {
@@ -133,6 +150,26 @@ int main()
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
+    // Instance array
+    unsigned int instanceVBO;
+    glGenBuffers(1, &instanceVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+
+    std::vector<glm::mat4> modelMatrices;
+    for (unsigned int i = 0; i < 10; i++) {
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, cubePositions[i]);
+        modelMatrices.push_back(model);
+    }
+    glBufferData(GL_ARRAY_BUFFER, modelMatrices.size() * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
+    // Set attribute pointers for mat4 (4 times vec4)
+    std::size_t vec4Size = sizeof(glm::vec4);
+    for (unsigned int i = 0; i < 4; i++) {
+        glEnableVertexAttribArray(2 + i);
+        glVertexAttribPointer(2 + i, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(i * vec4Size));
+        glVertexAttribDivisor(2 + i, 1);
+    }
+    // texture setup omitted for brevity
 
     // load and create a texture 
     // -------------------------
@@ -225,6 +262,7 @@ int main()
 
         // render boxes
         glBindVertexArray(VAO);
+        /*
         for (unsigned int i = 0; i < 10; i++)
         {
             // calculate the model matrix for each object and pass it to shader before drawing
@@ -235,6 +273,8 @@ int main()
             ourShader.setMat4("model", model);
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
+        */
+        glDrawArraysInstanced(GL_TRIANGLES, 0, 36, 10);
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);

@@ -6,15 +6,27 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <vector>
+#include <map>
 
 // Defines several possible options for camera movement. Used as abstraction to stay away from window-system specific input methods
 enum Camera_Movement {
     FORWARD,
     BACKWARD,
     LEFT,
-    RIGHT
+    RIGHT,
+    UP,
+    DOWN,
 };
 
+//
+std::map<int, Camera_Movement> Camera_Key_Map = {
+        {GLFW_KEY_W, FORWARD},
+        {GLFW_KEY_S, BACKWARD},
+        {GLFW_KEY_A, LEFT},
+        {GLFW_KEY_D, RIGHT},
+        {GLFW_KEY_Q, UP},
+        {GLFW_KEY_E, DOWN}
+};
 // Default camera values
 const float YAW         = -90.0f;
 const float PITCH       =  0.0f;
@@ -78,6 +90,10 @@ public:
             Position -= Right * velocity;
         if (direction == RIGHT)
             Position += Right * velocity;
+        if (direction == UP)
+            Position -= Up * velocity;
+        if (direction == DOWN)
+            Position += Up * velocity;
     }
 
     // processes input received from a mouse input system. Expects the offset value in both the x and y direction.
@@ -112,6 +128,22 @@ public:
             Zoom = 45.0f;
     }
 
+    // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
+    // ---------------------------------------------------------------------------------------------------------
+    void processInput(GLFWwindow *window,float deltaTime)
+    {
+        // Close the window if the ESC key is pressed
+        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+            glfwSetWindowShouldClose(window, true);
+
+        // Iterate through the key mappings and check if each key is pressed,
+        // then perform the corresponding camera movement
+        for (const auto& pair : Camera_Key_Map)
+        {
+            if (glfwGetKey(window, pair.first) == GLFW_PRESS)
+                this->ProcessKeyboard(pair.second, deltaTime);
+        }
+    }
 private:
     // calculates the front vector from the Camera's (updated) Euler Angles
     void updateCameraVectors()

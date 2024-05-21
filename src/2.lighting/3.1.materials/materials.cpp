@@ -37,6 +37,35 @@ float lastFrame = 0.0f;
 // lighting
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 
+// lighting and material struct
+struct Light {
+    glm::vec3 position;
+    glm::vec3 ambient;
+    glm::vec3 diffuse;
+    glm::vec3 specular;
+};
+
+struct Material {
+    glm::vec3 ambient;
+    glm::vec3 diffuse;
+    glm::vec3 specular;
+    float shininess;
+};
+// 全局变量
+Light light;
+Material material;
+void setupLightAndMaterial() {
+    // 初始化光源和材质属性
+    light.position = glm::vec3(1.2f, 1.0f, 2.0f);
+    light.ambient = glm::vec3(0.2f);
+    light.diffuse = glm::vec3(0.5f);
+    light.specular = glm::vec3(1.0f);
+
+    material.ambient = glm::vec3(1.0f, 0.5f, 0.31f);
+    material.diffuse = glm::vec3(1.0f, 0.5f, 0.31f);
+    material.specular = glm::vec3(0.5f);
+    material.shininess = 32.0f;
+}
 int main()
 {
     // glfw: initialize and configure
@@ -65,7 +94,7 @@ int main()
     glfwSetScrollCallback(window, scroll_callback);
 
     // tell GLFW to capture our mouse
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
     // glad: load all OpenGL function pointers
     // ---------------------------------------
@@ -168,50 +197,6 @@ int main()
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
 
-    // light properties
-    glm::vec3 lightColor;
-    lightColor.x = static_cast<float>(sin(glfwGetTime() * 2.0));
-    lightColor.y = static_cast<float>(sin(glfwGetTime() * 0.7));
-    lightColor.z = static_cast<float>(sin(glfwGetTime() * 1.3));
-    glm::vec3 diffuseColor = lightColor   * glm::vec3(0.5f); // decrease the influence
-    glm::vec3 ambientColor = diffuseColor * glm::vec3(0.2f); // low influence
-    lightingShader.setVec3("light.ambient", ambientColor);
-    lightingShader.setVec3("light.diffuse", diffuseColor);
-    lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
-
-    // material properties
-    lightingShader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
-    lightingShader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
-    lightingShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f); // specular lighting doesn't have full effect on this object's material
-    lightingShader.setFloat("material.shininess", 32.0f);
-
-    lightingShader.setVec3("light.position", lightPos);
-    lightingShader.setVec3("viewPos", camera.Position);
-
-    // Calculate view/projection transformations once if the camera and window size are fixed
-    glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-    glm::mat4 view = camera.GetViewMatrix();
-
-    // World transformation for the cube
-    glm::mat4 modelCube = glm::mat4(1.0f);
-
-    // World transformation for the lamp object
-    glm::mat4 modelLamp = glm::mat4(1.0f);
-    modelLamp = glm::translate(modelLamp, lightPos);
-    modelLamp = glm::scale(modelLamp, glm::vec3(0.2f)); // a smaller cube
-
-    // Set the static uniforms once
-    lightingShader.use();
-    lightingShader.setMat4("projection", projection);
-    lightingShader.setMat4("view", view);
-    lightingShader.setMat4("model", modelCube);
-
-    lightCubeShader.use();
-    lightCubeShader.setMat4("projection", projection);
-    lightCubeShader.setMat4("view", view);
-    lightCubeShader.setMat4("model", modelLamp);
-
-
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
@@ -224,7 +209,7 @@ int main()
 
         // input
         // -----
-        processInput(window);
+        camera.processInput(window,deltaTime);
 
         // render
         // ------
@@ -233,7 +218,30 @@ int main()
 
         // be sure to activate shader when setting uniforms/drawing objects
         lightingShader.use();
+        lightingShader.setVec3("light.position", lightPos);
+        lightingShader.setVec3("viewPos", camera.Position);
 
+        // light properties
+        lightingShader.setVec3("light.position", light.position);
+        lightingShader.setVec3("light.ambient", light.ambient);
+        lightingShader.setVec3("light.diffuse", light.diffuse);
+        lightingShader.setVec3("light.specular", light.specular);
+
+        //material properties
+        lightingShader.setVec3("material.ambient", material.ambient);
+        lightingShader.setVec3("material.diffuse", material.diffuse);
+        lightingShader.setVec3("material.specular", material.specular);
+        lightingShader.setFloat("material.shininess", material.shininess);
+
+        // view/projection transformations
+        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        glm::mat4 view = camera.GetViewMatrix();
+        lightingShader.setMat4("projection", projection);
+        lightingShader.setMat4("view", view);
+
+        // world transformation
+        glm::mat4 model = glm::mat4(1.0f);
+        lightingShader.setMat4("model", model);
 
         // render the cube
         glBindVertexArray(cubeVAO);
@@ -242,10 +250,43 @@ int main()
 
         // also draw the lamp object
         lightCubeShader.use();
+        lightCubeShader.setMat4("projection", projection);
+        lightCubeShader.setMat4("view", view);
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, lightPos);
+        model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
+        lightCubeShader.setMat4("model", model);
         glBindVertexArray(lightCubeVAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
+        // start the ImGui frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        // ImGui window for controlling transformations
+        ImGui::Begin("Control Panel");
+        ImGui::Text("Light and Material Properties");
+        ImGui::ColorEdit3("Ambient Color", glm::value_ptr(light.ambient));
+        ImGui::ColorEdit3("Diffuse Color", glm::value_ptr(light.diffuse));
+        ImGui::ColorEdit3("Specular Color", glm::value_ptr(light.specular));
+        ImGui::ColorEdit3("Material Ambient", glm::value_ptr(material.ambient));
+        ImGui::ColorEdit3("Material Diffuse", glm::value_ptr(material.diffuse));
+        ImGui::ColorEdit3("Material Specular", glm::value_ptr(material.specular));
+        ImGui::SliderFloat("Material Shininess", &material.shininess,0.0f , 128.0f);
+        ImGui::End();
+        // render ImGui
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-
+        // Update and Render additional Platform Windows
+        // (Platform functions may change the current OpenGL context, so we save/restore it to make it easier to paste this code elsewhere.
+        // For this specific demo app we could also call glfwMakeContextCurrent(window) directly)
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            GLFWwindow* backup_current_context = glfwGetCurrentContext();
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+            glfwMakeContextCurrent(backup_current_context);
+        }
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);

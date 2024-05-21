@@ -3,3 +3,5 @@ bin/
 build/
 out/
 /.vs
+/cmake-build-debug-visual-studio/
+/.idea/

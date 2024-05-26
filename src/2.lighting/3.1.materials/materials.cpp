@@ -31,7 +31,7 @@ float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
 // timing
-float deltaTime = 0.0f; 
+float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
 // lighting
@@ -197,6 +197,8 @@ int main()
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
 
+    setupLightAndMaterial();
+
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
@@ -218,7 +220,6 @@ int main()
 
         // be sure to activate shader when setting uniforms/drawing objects
         lightingShader.use();
-        lightingShader.setVec3("light.position", lightPos);
         lightingShader.setVec3("viewPos", camera.Position);
 
         // light properties
@@ -253,7 +254,7 @@ int main()
         lightCubeShader.setMat4("projection", projection);
         lightCubeShader.setMat4("view", view);
         model = glm::mat4(1.0f);
-        model = glm::translate(model, lightPos);
+        model = glm::translate(model, light.position);
         model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
         lightCubeShader.setMat4("model", model);
         glBindVertexArray(lightCubeVAO);
@@ -272,6 +273,7 @@ int main()
         ImGui::ColorEdit3("Material Diffuse", glm::value_ptr(material.diffuse));
         ImGui::ColorEdit3("Material Specular", glm::value_ptr(material.specular));
         ImGui::SliderFloat("Material Shininess", &material.shininess,0.0f , 128.0f);
+        ImGui::DragFloat3("Light Position", glm::value_ptr(light.position),0.1f);
         ImGui::End();
         // render ImGui
         ImGui::Render();
@@ -326,7 +328,7 @@ void processInput(GLFWwindow *window)
 // ---------------------------------------------------------------------------------------------
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-    // make sure the viewport matches the new window dimensions; note that width and 
+    // make sure the viewport matches the new window dimensions; note that width and
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }

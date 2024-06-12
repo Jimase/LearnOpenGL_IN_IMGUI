@@ -17,6 +17,8 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
+void cursor_enter_callback(GLFWwindow* window, int entered);
+void mouse_callback(GLFWwindow* window, double xposIn, double yposIn);
 unsigned int loadTexture(const char *path);
 
 // settings
@@ -32,6 +34,7 @@ bool firstMouse = true;
 // timing
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
+bool mouseInWindow = true;
 
 int main()
 {
@@ -59,9 +62,10 @@ int main()
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
+    glfwSetCursorEnterCallback(window, cursor_enter_callback);
 
     // tell GLFW to capture our mouse
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
     // glad: load all OpenGL function pointers
     // ---------------------------------------
@@ -304,6 +308,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 // -------------------------------------------------------
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
 {
+    if (!mouseInWindow) return; // 仅当鼠标在窗口内时更新
     float xpos = static_cast<float>(xposIn);
     float ypos = static_cast<float>(yposIn);
     if (firstMouse)
@@ -366,4 +371,16 @@ unsigned int loadTexture(char const * path)
     }
 
     return textureID;
+}
+void cursor_enter_callback(GLFWwindow* window, int entered)
+{
+    if (entered)
+    {
+        mouseInWindow = true;  // 鼠标进入窗口
+        firstMouse = true;     // 重置鼠标初始位置
+    }
+    else
+    {
+        mouseInWindow = false; // 鼠标离开窗口
+    }
 }

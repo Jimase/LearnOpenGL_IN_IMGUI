@@ -216,7 +216,7 @@ int main()
 
         // input
         // -----
-        processInput(window);
+        camera.processInput(window,deltaTime);
 
         // sort the transparent windows before rendering
         // ---------------------------------------------

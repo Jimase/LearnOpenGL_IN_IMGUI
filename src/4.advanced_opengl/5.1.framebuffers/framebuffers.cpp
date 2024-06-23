@@ -232,7 +232,7 @@ int main()
 
         // input
         // -----
-        processInput(window);
+        camera.processInput(window,deltaTime);
 
 
         // render

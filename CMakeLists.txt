@@ -1,5 +1,5 @@
-cmake_minimum_required (VERSION 3.0)
-cmake_policy(VERSION 3.0)
+cmake_minimum_required (VERSION 3.5)
+cmake_policy(VERSION 3.5)
 
 project(LearnOpenGL_In_ImGui)
 
@@ -127,6 +127,7 @@ set(4.advanced_opengl
     2.stencil_testing
     3.1.blending_discard
     3.2.blending_sort
+    4.face_culling_exercise1
     5.1.framebuffers
     5.2.framebuffers_exercise1
     6.1.cubemaps_skybox

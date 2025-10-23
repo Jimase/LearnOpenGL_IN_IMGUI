@@ -3,6 +3,15 @@ cmake_policy(VERSION 3.0)
 
 project(LearnOpenGL)
 
+# 优化后（推荐）
+if(DEFINED ENV{VCPKG_ROOT})
+    set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" 
+        CACHE STRING "Vcpkg toolchain file")
+else()
+    set(CMAKE_TOOLCHAIN_FILE "D:/_S/tools_set/vcpkg/scripts/buildsystems/vcpkg.cmake" 
+        CACHE STRING "Vcpkg toolchain file")
+endif()
+
 set(CMAKE_CXX_STANDARD 17) # this does nothing for MSVC, use target_compile_options below
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS ON)
@@ -30,6 +39,8 @@ message(STATUS "Found ASSIMP in ${ASSIMP_INCLUDE_DIR}")
 # message(STATUS "Found SOIL in ${SOIL_INCLUDE_DIR}")
 # find_package(GLEW REQUIRED)
 # message(STATUS "Found GLEW in ${GLEW_INCLUDE_DIR}")
+find_package(imgui REQUIRED)
+message(STATUS "Found ImGui in ${imgui_DIR}")
 if(APPLE)
   find_package(Freetype REQUIRED)
   message(STATUS "Found Freetype in ${FREETYPE_INCLUDE_DIRS}")
@@ -82,6 +93,7 @@ set(1.getting_started
     3.1.shaders_uniform
     3.2.shaders_interpolation
     3.3.shaders_class
+    3.7.shaders_binary
     4.1.textures
     4.2.textures_combined
     4.4.textures_exercise2
